@@ -16,7 +16,7 @@ ARG PHP_VERSION=${PHP_VERSION}
 
 FROM laradock/php-fpm:2.2-${PHP_VERSION}
 
-LABEL maintainer="Mahmoud Zalt <mahmoud@zalt.me>"
+LABEL maintainer="Kuchura Dmitry <kuchura.d@gmail.com>"
 
 # Set Environment Variables
 ENV DEBIAN_FRONTEND noninteractive
