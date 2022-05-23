@@ -6,10 +6,3 @@
 
 # ENVIRONMENT
 .env
-
-# NODE MODULES
-src/node_modules
-
-# Docker volume
-.docker/mongo/data/*
-.docker/postgres/data/*
