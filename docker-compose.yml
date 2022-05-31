@@ -1,35 +1,10 @@
-version: '3'
+version: '3.5'
 
 services:
-  web:
-    container_name: nginx
-    image: nginx
-    volumes:
-      - './.docker/nginx/default.conf:/etc/nginx/conf.d/default.conf'
-      - './src/:/var/www/html'
-    ports:
-      - '80:80'
-    depends_on:
-      - php
-      - db
-  php:
-    container_name: php
-    build: .docker/php
-    user: '${UID}:${GID}'
-    volumes:
-      - './.docker/php/php.ini:/usr/local/etc/php/conf.d/php.ini'
-      - './.docker/php/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini'
-      - './src/:/var/www/html'
-  composer:
-    container_name: composer
-    image: composer
-    user: '${UID}:${GID}'
-    volumes:
-      - './src/:/app'
-    command: install --no-dev
-  db:
-    container_name: db
-    image: 'postgres:10.12'
+  database:
+    container_name: local_database
+    build:
+      context: .docker/postgres
     environment:
       - 'POSTGRES_DB=${DB_NAME}'
       - 'POSTGRES_USER=${DB_USER}'
@@ -37,13 +12,70 @@ services:
     ports:
       - '5432:5432'
     volumes:
-      - './.docker/postgres/data:/var/lib/postgresql/data'
-      - './.docker/postgres:/docker-entrypoint-initdb.d'
+      - 'local-database:/var/lib/postgresql/data'
+  zookeeper:
+    container_name: local_zookeeper
+    image: docker.io/bitnami/zookeeper:3
+    ports:
+      - '2181:2181'
+    volumes:
+      - 'local-zookeeper:/bitnami'
+    environment:
+      - 'ALLOW_ANONYMOUS_LOGIN=yes'
+  kafka:
+    container_name: local_kafka
+    image: docker.io/bitnami/kafka:2
+    ports:
+      - '9092:9092'
+    volumes:
+      - 'local-kafka:/bitnami'
+    environment:
+      - 'KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181'
+      - 'ALLOW_PLAINTEXT_LISTENER=yes'
+      - 'KAFKA_LISTENERS=PLAINTEXT://:9092'
+      - 'KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://127.0.0.1:9092'
+    depends_on:
+      - zookeeper
+  keycloak:
+    container_name: local_keycloak
+    image: quay.io/keycloak/keycloak:18.0.0
+    environment:
+      - 'KEYCLOAK_ADMIN=admin'
+      - 'KEYCLOAK_ADMIN_PASSWORD=admin'
+    ports:
+      - '28080:8080'
+    restart: unless-stopped
+    command:
+      - 'start-dev'
   mongo:
-    container_name: mongo
-    build: .docker/mongo
+    container_name: local_mongo
+    build:
+      context: .docker/mongo
     ports:
       - '27017:27017'
     volumes:
-      - './.docker/mongo/data:/data/db'
-      - './.docker/mongo/mongo_config:/data/configdb'
+      - 'local-mongo:/data/db'
+  redis:
+    container_name: local_redis
+    image: redis:latest
+    volumes:
+      - 'local-redis:/data'
+    ports:
+      - '6379:6379'
+  flagr:
+    container_name: local_flagr
+    image: checkr/flagr:latest
+    ports:
+      - '18000:18000'
+
+volumes:
+  local-database:
+    driver: local
+  local-mongo:
+    driver: local
+  local-redis:
+    driver: local
+  local-zookeeper:
+    driver: local
+  local-kafka:
+    driver: local
