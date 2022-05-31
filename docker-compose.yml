@@ -17,18 +17,18 @@ services:
     container_name: local_zookeeper
     image: docker.io/bitnami/zookeeper:3
     ports:
-      - "2181:2181"
+      - '2181:2181'
     volumes:
-      - "local-zookeeper:/bitnami"
+      - 'local-zookeeper:/bitnami'
     environment:
       - 'ALLOW_ANONYMOUS_LOGIN=yes'
   kafka:
     container_name: local_kafka
     image: docker.io/bitnami/kafka:2
     ports:
-      - "9092:9092"
+      - '9092:9092'
     volumes:
-      - "local-kafka:/bitnami"
+      - 'local-kafka:/bitnami'
     environment:
       - 'KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181'
       - 'ALLOW_PLAINTEXT_LISTENER=yes'
@@ -43,10 +43,10 @@ services:
       - 'KEYCLOAK_ADMIN=admin'
       - 'KEYCLOAK_ADMIN_PASSWORD=admin'
     ports:
-      - "28080:8080"
+      - '28080:8080'
     restart: unless-stopped
     command:
-      - "start-dev"
+      - 'start-dev'
   mongo:
     container_name: local_mongo
     build:
