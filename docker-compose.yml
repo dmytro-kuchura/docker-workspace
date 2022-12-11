@@ -6,9 +6,9 @@ services:
     build:
       context: .docker/postgres
     environment:
-      - 'POSTGRES_DB=${DB_NAME}'
-      - 'POSTGRES_USER=${DB_USER}'
-      - 'POSTGRES_PASSWORD=${DB_PASSWORD}'
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - '5432:5432'
     volumes:
@@ -16,25 +16,27 @@ services:
   zookeeper:
     container_name: local_zookeeper
     image: confluentinc/cp-zookeeper:latest
-    environment:
-     - 'ZOOKEEPER_CLIENT_PORT=2181'
-     - 'ZOOKEEPER_TICK_TIME=2000'
     ports:
-      - '22181:2181'
+      - '2181:2181'
+    hostname: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
   kafka:
     container_name: local_kafka
     image: confluentinc/cp-kafka:latest
+    ports:
+      - '9092:9092'
     depends_on:
       - zookeeper
-    ports:
-      - '29092:29092'
     environment:
-      - 'KAFKA_BROKER_ID=1'
-      - 'KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181'
-      - 'KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092'
-      - 'KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
-      - 'KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT'
-      - 'KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1'
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
   keycloak:
     container_name: local_keycloak
     image: quay.io/keycloak/keycloak:18.0.0
@@ -66,6 +68,23 @@ services:
     image: checkr/flagr:latest
     ports:
       - '18000:18000'
+  ibmmq:
+    container_name: local_ibmmq
+    image: ibmcom/mq:latest
+    ports:
+      - '1414:1414'
+    environment:
+      LICENSE: accept
+      MQ_QMGR_NAME: MQA01
+    stdin_open: true
+    tty: true
+    restart: always
+  sonar:
+    container_name: sonarqube_local
+    image: sonarqube:latest
+    ports:
+      - '9000:9000'
+      - '9092:9092'
 
 volumes:
   local-database:
@@ -73,8 +92,4 @@ volumes:
   local-mongo:
     driver: local
   local-redis:
-    driver: local
-  local-zookeeper:
-    driver: local
-  local-kafka:
     driver: local
