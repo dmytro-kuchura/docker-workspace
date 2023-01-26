@@ -1,4 +1,4 @@
-FROM postgres:latest
+FROM postgres:14.5
 
 RUN localedef -i uk_UA -c -f UTF-8 -A /usr/share/locale/locale.alias uk_UA.UTF-8
 
