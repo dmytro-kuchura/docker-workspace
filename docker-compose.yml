@@ -15,34 +15,41 @@ services:
       - 'local-database:/var/lib/postgresql/data'
   zookeeper:
     container_name: local_zookeeper
-    image: confluentinc/cp-zookeeper:latest
+    image: confluentinc/cp-zookeeper:latest.arm64
     ports:
       - '2181:2181'
-    hostname: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
   kafka:
     container_name: local_kafka
-    image: confluentinc/cp-kafka:latest
-    ports:
-      - '9092:9092'
+    image: confluentinc/cp-kafka:latest.arm64
     depends_on:
       - zookeeper
+    ports:
+      - '9092:9092'
+      - '9997:9997'
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker:29092
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
   keycloak:
     container_name: local_keycloak
-    image: quay.io/keycloak/keycloak:18.0.0
+    image: quay.io/keycloak/keycloak:20.0.1
     environment:
-      - 'KEYCLOAK_ADMIN=admin'
-      - 'KEYCLOAK_ADMIN_PASSWORD=admin'
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL_HOST: database
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_SCHEMA: public
+      KC_DB_USERNAME: ${DB_USER}
+      KC_DB_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      - database
     ports:
       - '28080:8080'
     restart: unless-stopped
@@ -66,25 +73,26 @@ services:
   flagr:
     container_name: local_flagr
     image: checkr/flagr:latest
+    depends_on:
+      - database
     ports:
       - '18000:18000'
-  ibmmq:
-    container_name: local_ibmmq
-    image: ibmcom/mq:latest
+  kafka-ui:
+    container_name: local_kafka-ui
+    image: provectuslabs/kafka-ui:master
     ports:
-      - '1414:1414'
-    environment:
-      LICENSE: accept
-      MQ_QMGR_NAME: MQA01
-    stdin_open: true
-    tty: true
+      - '18080:8080'
     restart: always
-  sonar:
-    container_name: sonarqube_local
-    image: sonarqube:latest
+    environment:
+      KAFKA_CLUSTERS_0_NAME: localhost
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+  clickhouse:
+    container_name: local_clickhouse
+    image: clickhouse/clickhouse-server:latest
     ports:
+      - '8123:8123'
       - '9000:9000'
-      - '9092:9092'
 
 volumes:
   local-database:
